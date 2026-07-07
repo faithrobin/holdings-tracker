@@ -21,6 +21,7 @@
   .login-btn { padding: 12px 24px; font-size: 16px; border: none; border-radius: 8px; background: #4a6cf7; color: #fff; cursor: pointer; transition: background 0.2s; }
   .login-btn:hover { background: #3a5ce5; }
   #pwd-error { color: #e04040; margin-top: 14px; font-size: 0.85rem; display: none; }
+  #pwd-loading { color: #8a8aaa; margin-top: 14px; font-size: 0.85rem; display: none; }
 
   /* Content */
   #app { display: none; }
@@ -61,6 +62,7 @@
       <button class="login-btn" onclick="doUnlock()">Unlock</button>
     </div>
     <p id="pwd-error">Password incorrect</p>
+    <p id="pwd-loading">Decrypting...</p>
   </div>
 </div>
 
@@ -93,27 +95,55 @@
 </div>
 
 <script>
-var ENC = "FkMNFRIMMgwZVltJWFFZTU9ZXE1PVhMMDg4dEBJLV0E0D0MNDBUKVltJT1NfRldEXVdCRlNLQUFNDQYMT1tPQ09cQUFNERUPT1tPRU9RVFdYWEFLABdNTkFcXVdWWlFYQUFNHQ8NCBlNTkFYXVFfWlFFTUMBFRdLV0FeWlFFTUMMHAY2HQIbVltJAxQDGBxFTRpNEAAdCENVVENbXVNZWVFfQFNcVk1JTxgIEUNTTVZBQVlFTUMKAAdLV0FeWllaVE1PVgwfT1tPQVFQVE9YWEFLBA8LERlLV0FeRFFfQ1FaWEFLAwAZVltJXE9fRFdYQUFNFwkOMhEMAENTTVFBQlAUQUEUVgUIGQRNTkFLX1FdQkxZW0xdQENFTUMWEwRLV0FYWlRFTUMKAAdLV0FeWllYQUFNGRdLV0FaRFVaQ1FDVEMAAwUKDENTTVhWQE9RWk1PVg8IG0NVVFFHVFhbTU1JTwIHEz4ZDhVNTkFEXE9eRRxFTRpNEAAdCENVVENbXVNZWVFfQFNaVk1JTxgIEUNTTVZBQFVFTUMKAAdLV0FeWllYX01PVgwfT1tPQVFZWk9ZWEFLBA8LERlLV0FWTFZHVVhDVEMHDBdNTkFZQ1hXQ1hFTUMMHAY2HQIbVltJQFFBQxxFTRpNEAAdCENVVENbXVNZWVFfQFNZVk1JTxgIEUNTTVZBQVBFTUMKAAdLV0FeWlZdXk1PVgwfT1tPQVFbVU9WWEFLBA8LERlLV0FWTVNHXVlDVEMHDBdNTkFZQ1hWRlBFTUMMHAY2HQIbVltJXU9bRxxFTRpNEAAdCENVVENbXVNZWVFfQFNWVk1JTxgIEUNTTVZBQk1JTwQbEkNTTVBBQ1lYQUFNGRdLV0FaRFhdQ1JDVEMAAwUKDENTTVBfRFVHVFhDVEMHDBdNTkFYQ1FfQU1JTwIHEz4ZDhVNTkFYQ1ISWEESTwUOAARLV0FNRlFbW0xfQkxaXUNDVEMQCgRNTkFeQ1RcWEFLCBUJVltJXE9YQ1hFTUMCAkNTTVRfQVBHWk1PVggHCQQXVltJVFhZWlRQQUFNGgAfT1tPRE9QVFdZWEFLDgkIKxEKGUNVVExZQ1lbCU1JFkMLFRUMT1tPVlNZX1dCRFZEXVBNWEFLFAYKVltJWk9ZTE1JTwQbEkNTTVBBTFJdQUFNGRdLV0FaRVRRQ1NDVEMAAwUKDENTTVBfRVZHWFZDVEMHDBdNTkFYQ1FeQ1dFTUMMHAY2HQIbVltJX09eRRxFTRpNEAAdCENVVENbXVNZWVFeQFFdVk1JTxgIEUNTTVZBTFJFTUMKAAdLV0FeWlZQWk1PVgwfT1tPQVNaWk9eWEFLBA8LERlLV0FeRFJaQ1BZWEFLAwAZVltJXE9fR1JbQUFNFwkOMhEMAENTTVBBQVIUQUEUVgUIGQRNTkFLX1FdQkxZWkxfR0NFTUMWEwRLV0FYWllaQUFNERUPT1tPRU9RXldDVEMEG0NVVFRbWVlBTE1JTwgBEAQRT1tPRVFaWE9aQk1JTw8OAkNTTVBBRFJcW01PVgIBCj4fFxVLV0FfWlNbEE1PD0MNDBUKVltJT1NfRldEXVZCRFdLQUFNDQYMT1tPQ09RQUFNERUPT1tPRU9RWFlDVEMEG0NVVFRbXlZBQE1JTwgBEAQRT1tPRVFaXk9dRU1JTw8OAkNTTVBBRFJaX01PVgIBCj4fFxVLV0FCRE9bXxxDVBpLCQAbEUNTTUNdRFNfQFFYWVFeT01PVhgOCENVVFZHW1lDVEMMGQdNTkFYQ1leQU1JTwwZVltJWFBaRk9cQUFNHQ8NCBlNTkFYXVBZWlVaQUFNGgAfT1tPRU9ZXFdbWEFLDgkIKxEKGUNVVExYQ1ddCTwU";
+// AES-256-GCM encrypted data (PBKDF2 key derivation, random salt+IV)
+var ENC_SALT = "Ppfp2QoPzka0cg81zHWeCA==";
+var ENC_IV = "vjvqWapMJ6VERV8I";
+var ENC_CT = "LTcT17v4Li2veQo1+KIR+cD5/kgCcAD9a7SAGc2LimoceWLB4Xt37rsiwL37toEcwhhRpaaW/MctjEhEO/TAgmJcF1FoJ6Q0yD50KaBb4HoifmUsV+K8+ZobxpBDEzQQSsmbKf5Ba1Hg6PMS8Zc09Rn9XujBkad2po8T81EKP2dx4Wr0ZK24EC4tXO6G5Q7PNsDb3W0OMH04+NuHtOHJ842ayG2+nGO8A0LVyp5AeCe4nhkXFeflFD0xV22blusE1FuzINWVC9nw8VRS9kvqP/RAs0qbPx7BE4BdENVKY1JI6oZt+zBe7H55b2mcObmF4dgxm/rn7yKWMP6F+RASqpuigfvaJ0XqRgfWbV/V0rKlulK8up1+VKO72kJZLPWNzCM2MjxkDu6WXiEDUJ/PphnGN1xR2NavoaVp3dBVaKnlBG/kLdhfxQjb9VBRigAF7XzpFXIg+bKX92t1MguapunREiBQMRaJ6VdkZpia8w5vUOn/42TOS4tL/inY7rIPI/TwzseO1/cf8xOIM3tKmdfwdNWHbww6zTJmUG4IiE6+6nweQM51A3oxz4rFyURxU9g04CEBApoK7Szxb0W3fq2chewGqtdLy6muV139m5Ju04pt4fJ8r0GRZV8PjhvVgzULXJCtVUtcVKPJTfuIODrLKRD/vKexLmzIqRfBmlnexpyzX4yn8F2QQ9h6i4/T6UoagAJugItyNzi/0nRk/onOoj530pvkVqHH5QOfqMqJjiJ0E/UKMkY4aimhiAZUysCMcZtPUmWTmXq/GDS0xsC3ONcJARSjbj+jX0xWqZmdYcGPt/e+q2iJUHoPUpMxfumUdhom//KDNLeMZxrakr/iwSmSw8ynYBOzfDpSwn4dgkUqXUhmpDOzicQ1256cUvnU9FxXG1ZzuCANYuRiceH19Sd65TyXdAjA0oNaCTm+cOfDeIJF/HnliJVU/oncC1MLFKwmTkE+n7DTahLIflYrZDju+1t1IbYYfk+mO2yig8hqK4NGx05oPWIqZWO8ljl+DP58uRZsTQ/m9Q4ipaiP9kANoe9iEOLSXETSL/qHZsoxpHyPEzTbsz5JGvj/EdnyhVUYh3jFylm9uq418ky0MuhDemX+6xsNzPvHXmb8tY8H4OtqDrVZdcA3nys4sP4fVyWKa7z2ncGyYtlMSBUifdKtFrkLK2NmBQ2wLk4w0xppEXGB6RsJ8aX2OJj2AB9F+pOm8+JCy24KwAH5eDj25O89G6osq9rdOpFMt42SilSPYKsJUspq+D77wBpMn5uHC/dLZuFEhxoVyv2yXNSlJyJSFi0bZNvVKRBtV+f1wOwfeKBexZVHpvX7xsld9ckE6+KlUDg9/fauAAW4EiPtbQ0R2+rluQTySINIG7YqJr36kzSDdTRbZ2RSt6XQpGk6FeX+RxBq9iZh4SjxMCQmMWkoHNDysz2Xz5eFz7DcsGyza73fG0AnObxpZul8vA0GTKemkil3WwHR/f7HMeCKr3mB+06Ss2tpXAxkKjp864pj+NsSj6YdLoCalqOziFELTIJHjyuRwEBNjJbyqORSjH7SgV0TfnTRzE7XzUke5V4554CYH3svtNHjJTquXKMBbwCClmDSgOP+EnPALjeqtC1ueOSLfhQLwaPcMBdYhV/KVP768m3Z/EUJUv821QBRuYE3fCwJR9bX8n3/GYQxczsJ9cxmh54HBq9bSxDTbW/1pyNGPqyXKFtO863BOdYMIrSQe9vLOWs5vCjoPZ9V6EWX6VThy87Wt/qXO+LxvHUL/fK2TGuQW6XRU2ihjzavP1ln3+Ysy5zNxvIUp8pefoSjPC7PHXB5NbgwyrXTEcWkkMnX0DNbqvMePeFgpkA/b9I+cvNEvy8XpTcK9ewYr2e9eJHlg69U0Q==";
+var ENC_ITER = 100000;
 
-function xdec(enc, key) {
-  var raw = atob(enc);
-  var r = '';
-  for (var i = 0; i < raw.length; i++) {
-    r += String.fromCharCode(raw.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return r;
+function b64ToBuf(b64) {
+  var bin = atob(b64);
+  var buf = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return buf.buffer;
 }
 
-function doUnlock() {
+async function deriveAESKey(password, saltBuf, iterations) {
+  var enc = new TextEncoder();
+  var keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: saltBuf, iterations: iterations, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['decrypt']
+  );
+}
+
+async function doUnlock() {
   var pwd = document.getElementById('pwd-input').value;
+  document.getElementById('pwd-error').style.display = 'none';
+  document.getElementById('pwd-loading').style.display = 'block';
   try {
-    var dec = xdec(ENC, pwd);
-    var DATA = JSON.parse(dec);
+    var saltBuf = b64ToBuf(ENC_SALT);
+    var ivBuf = b64ToBuf(ENC_IV);
+    var ctBuf = b64ToBuf(ENC_CT);
+    var aesKey = await deriveAESKey(pwd, saltBuf, ENC_ITER);
+    var plainBuf = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: ivBuf }, aesKey, ctBuf
+    );
+    var jsonStr = new TextDecoder().decode(plainBuf);
+    var DATA = JSON.parse(jsonStr);
+
+    document.getElementById('pwd-loading').style.display = 'none';
     document.getElementById('login-overlay').style.opacity = '0';
     setTimeout(function() { document.getElementById('login-overlay').style.display = 'none'; }, 500);
     document.getElementById('app').style.display = 'block';
     render(DATA);
   } catch(e) {
+    document.getElementById('pwd-loading').style.display = 'none';
     document.getElementById('pwd-error').style.display = 'block';
     document.getElementById('pwd-input').select();
   }
