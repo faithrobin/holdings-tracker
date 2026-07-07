@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>持仓市值追踪 - 雅戈尔 & 香港证券ETF</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f0f2f5; color: #333; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  h1 { text-align: center; font-size: 1.6rem; color: #1a1a1a; margin-bottom: 24px; }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-align: center; transition: transform 0.15s; }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .card .label { font-size: 0.85rem; color: #888; margin-bottom: 8px; }
+  .card .value { font-size: 1.8rem; font-weight: 700; }
+  .card .sub { font-size: 0.8rem; margin-top: 6px; color: #999; }
+  .up { color: #e04040 !important; }
+  .down { color: #2eaa62 !important; }
+  .flat { color: #888 !important; }
+  .chart-wrap { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 28px; }
+  .chart-wrap h2 { font-size: 1.1rem; margin-bottom: 16px; color: #333; }
+  .table-wrap { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #f0f4ff; padding: 12px 10px; font-size: 0.82rem; color: #555; text-align: center; border-bottom: 2px solid #d0d8f0; }
+  td { padding: 10px; font-size: 0.85rem; text-align: center; border-bottom: 1px solid #f0f0f0; }
+  tr:hover td { background: #f8f9ff; }
+  tr.base-row td { background: #fff8e1; font-weight: 600; }
+  .footer { text-align: center; font-size: 0.75rem; color: #aaa; margin-top: 20px; }
+  @media (max-width: 700px) {
+    .cards { grid-template-columns: repeat(2, 1fr); }
+    .container { padding: 12px; }
+    .card .value { font-size: 1.3rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📊 持仓市值追踪</h1>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="chart-wrap">
+    <h2>📈 指数点位 & 净值走势</h2>
+    <canvas id="chart"></canvas>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>日期</th>
+          <th>雅戈尔(元)</th>
+          <th>香港证券ETF(元)</th>
+          <th>总市值(万元)</th>
+          <th>指数点位</th>
+          <th>净值</th>
+          <th>涨跌%</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="footer">基准日 2026-06-22 | 基准市值 5,069.01 万元 | 基准指数 1000.00 pt | 净值 1.0000 | 更新于 2026-07-07</div>
+</div>
+
+<script>
+const DATA = {"base_mv": 5069.01, "records": [{"date": "2026-06-22", "yge": 7.5, "etf": 1.8967, "mv": 5069.01, "index": 1000.0, "nav": 1.0, "chg_pct": null}, {"date": "2026-06-23", "yge": 7.58, "etf": 1.839, "mv": 5099.7, "index": 1006.05, "nav": 1.0061, "chg_pct": 0.61}, {"date": "2026-06-24", "yge": 7.5, "etf": 1.81, "mv": 5043.0, "index": 994.87, "nav": 0.9949, "chg_pct": -1.11}, {"date": "2026-06-25", "yge": 7.44, "etf": 1.812, "mv": 5007.6, "index": 987.89, "nav": 0.9879, "chg_pct": -0.7}, {"date": "2026-06-26", "yge": 7.51, "etf": 1.743, "mv": 5028.9, "index": 992.08, "nav": 0.9921, "chg_pct": 0.43}, {"date": "2026-06-29", "yge": 7.6, "etf": 1.781, "mv": 5094.3, "index": 1004.99, "nav": 1.005, "chg_pct": 1.3}, {"date": "2026-06-30", "yge": 7.53, "etf": 1.779, "mv": 5051.7, "index": 996.59, "nav": 0.9966, "chg_pct": -0.84}, {"date": "2026-07-01", "yge": 7.68, "etf": 1.834, "mv": 5158.2, "index": 1017.57, "nav": 1.0176, "chg_pct": 2.11}, {"date": "2026-07-02", "yge": 7.83, "etf": 1.797, "mv": 5237.1, "index": 1033.16, "nav": 1.0332, "chg_pct": 1.53}, {"date": "2026-07-03", "yge": 7.83, "etf": 1.836, "mv": 5248.8, "index": 1035.56, "nav": 1.0356, "chg_pct": 0.22}, {"date": "2026-07-06", "yge": 7.8, "etf": 1.858, "mv": 5237.4, "index": 1033.21, "nav": 1.0332, "chg_pct": -0.22}, {"date": "2026-07-07", "yge": 7.68, "etf": 1.815, "mv": 5152.5, "index": 1016.43, "nav": 1.0164, "chg_pct": -1.62}]};
+
+function fmt(n, d) { return Number(n).toFixed(d); }
+function chgClass(v) { return v === null || v === undefined ? 'flat' : (v >= 0 ? 'up' : 'down'); }
+function chgSign(v) { return v === null || v === undefined ? '' : (v >= 0 ? '+' : ''); }
+function arrow(v)    { return v === null || v === undefined ? '' : (v >= 0 ? '▲' : '▼'); }
+
+// ===== 指标卡片 =====
+document.getElementById('cards').innerHTML = [
+  { label: '最新指数点位', value: fmt(last.index, 2), sub: '基准 1000pt' },
+  { label: '最新净值',     value: fmt(last.nav, 4),  sub: '基准 1.0000', cls: chgClass(last.chg_pct) },
+  { label: '总市值',       value: fmt(last.mv, 1),   sub: '万元' },
+  { label: '当日涨跌',     value: chgSign(last.chg_pct) + fmt(last.chg_pct, 2) + '%',
+    sub: arrow(last.chg_pct) + ' 较前一交易日', cls: chgClass(last.chg_pct) }
+].map(c => `
+  <div class="card">
+    <div class="label">${c.label}</div>
+    <div class="value ${c.cls || ''}">${c.value}</div>
+    <div class="sub">${c.sub}</div>
+  </div>`).join('');
+
+// ===== 折线图 =====
+const labels   = DATA.records.map(r => r.date);
+const idxData  = DATA.records.map(r => r.index);
+const navData  = DATA.records.map(r => r.nav);
+
+new Chart(document.getElementById('chart'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [
+      {
+        label: '指数点位',
+        data: idxData,
+        borderColor: '#4a6cf7',
+        backgroundColor: 'rgba(74,108,247,0.10)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+        pointBackgroundColor: '#4a6cf7',
+        yAxisID: 'y'
+      },
+      {
+        label: '净值',
+        data: navData,
+        borderColor: '#e8913a',
+        backgroundColor: 'rgba(232,145,58,0.08)',
+        fill: false,
+        tension: 0.3,
+        pointRadius: 3,
+        pointBackgroundColor: '#e8913a',
+        yAxisID: 'y1'
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { position: 'top', labels: { font: { size: 13 } } },
+      tooltip: { backgroundColor: 'rgba(0,0,0,0.72)', padding: 12, titleFont: { size: 13 }, bodyFont: { size: 12 } }
+    },
+    scales: {
+      y: {
+        type: 'linear', position: 'left',
+        title: { display: true, text: '指数点位', font: { size: 13 } },
+        grid: { color: 'rgba(0,0,0,0.05)' }
+      },
+      y1: {
+        type: 'linear', position: 'right',
+        title: { display: true, text: '净值', font: { size: 13 } },
+        grid: { drawOnChartArea: false },
+        min: 0.98
+      },
+      x: { ticks: { font: { size: 11 } } }
+    }
+  }
+});
+
+// ===== 历史记录表格（倒序）=====
+const baseDate = '2026-06-22';
+let html = '';
+for (let i = DATA.records.length - 1; i >= 0; i--) {
+  const r = DATA.records[i];
+  const isBase = r.date === baseDate;
+  const cls = isBase ? 'base-row' : '';
+  const chgStr = r.chg_pct === null
+    ? '-'
+    : `<span class="${chgClass(r.chg_pct)}">${chgSign(r.chg_pct)}${fmt(r.chg_pct,2)}% ${arrow(r.chg_pct)}</span>`;
+  html += `<tr class="${cls}">
+    <td>${r.date}${isBase ? ' ★基准' : ''}</td>
+    <td>${fmt(r.yge,2)}</td>
+    <td>${fmt(r.etf,4)}</td>
+    <td>${fmt(r.mv,1)}</td>
+    <td>${fmt(r.index,2)}</td>
+    <td>${fmt(r.nav,4)}</td>
+    <td>${chgStr}</td>
+  </tr>`;
+}
+document.getElementById('tbody').innerHTML = html;
+</script>
+</body>
+</html>
