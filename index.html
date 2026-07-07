@@ -3,11 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>持仓市值追踪 - 雅戈尔 & 香港证券ETF</title>
+<meta name="robots" content="noindex, nofollow">
+<title>Portfolio Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f0f2f5; color: #333; }
+
+  /* Login Overlay */
+  #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.5s; }
+  .login-box { text-align: center; }
+  .login-box h2 { color: #fff; font-size: 1.4rem; margin-bottom: 24px; letter-spacing: 2px; }
+  .login-input-row { display: flex; gap: 8px; justify-content: center; }
+  #pwd-input { padding: 12px 16px; font-size: 16px; border: 1px solid #3a3a5c; border-radius: 8px; background: rgba(255,255,255,0.08); color: #fff; width: 220px; outline: none; transition: border-color 0.2s; }
+  #pwd-input:focus { border-color: #4a6cf7; }
+  #pwd-input::placeholder { color: #6a6a8a; }
+  .login-btn { padding: 12px 24px; font-size: 16px; border: none; border-radius: 8px; background: #4a6cf7; color: #fff; cursor: pointer; transition: background 0.2s; }
+  .login-btn:hover { background: #3a5ce5; }
+  #pwd-error { color: #e04040; margin-top: 14px; font-size: 0.85rem; display: none; }
+
+  /* Content */
+  #app { display: none; }
   .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
   h1 { text-align: center; font-size: 1.6rem; color: #1a1a1a; margin-bottom: 24px; }
   .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
@@ -36,137 +52,123 @@
 </style>
 </head>
 <body>
-<div class="container">
-  <h1>📊 持仓市值追踪</h1>
 
-  <div class="cards" id="cards"></div>
-
-  <div class="chart-wrap">
-    <h2>📈 指数点位 & 净值走势</h2>
-    <canvas id="chart"></canvas>
+<div id="login-overlay">
+  <div class="login-box">
+    <h2>&#128274; Access Verification</h2>
+    <div class="login-input-row">
+      <input type="password" id="pwd-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')doUnlock()">
+      <button class="login-btn" onclick="doUnlock()">Unlock</button>
+    </div>
+    <p id="pwd-error">Password incorrect</p>
   </div>
+</div>
 
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>日期</th>
-          <th>雅戈尔(元)</th>
-          <th>香港证券ETF(元)</th>
-          <th>总市值(万元)</th>
-          <th>指数点位</th>
-          <th>净值</th>
-          <th>涨跌%</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
+<div id="app">
+  <div class="container">
+    <h1>&#128202; Portfolio Tracker</h1>
+    <div class="cards" id="cards"></div>
+    <div class="chart-wrap">
+      <h2>&#128200; Index & NAV Trend</h2>
+      <canvas id="chart"></canvas>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>YGE</th>
+            <th>HK ETF</th>
+            <th>MV (CNY 10k)</th>
+            <th>Index</th>
+            <th>NAV</th>
+            <th>Chg%</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="footer">Base: 2026-06-22 | Base MV: 5,069.01 CNY 10k | Base Index: 1000.00 | NAV: 1.0000 | Updated: 2026-07-07</div>
   </div>
-
-  <div class="footer">基准日 2026-06-22 | 基准市值 5,069.01 万元 | 基准指数 1000.00 pt | 净值 1.0000 | 更新于 2026-07-07</div>
 </div>
 
 <script>
-const DATA = {"base_mv": 5069.01, "records": [{"date": "2026-06-22", "yge": 7.5, "etf": 1.8967, "mv": 5069.01, "index": 1000.0, "nav": 1.0, "chg_pct": null}, {"date": "2026-06-23", "yge": 7.58, "etf": 1.839, "mv": 5099.7, "index": 1006.05, "nav": 1.0061, "chg_pct": 0.61}, {"date": "2026-06-24", "yge": 7.5, "etf": 1.81, "mv": 5043.0, "index": 994.87, "nav": 0.9949, "chg_pct": -1.11}, {"date": "2026-06-25", "yge": 7.44, "etf": 1.812, "mv": 5007.6, "index": 987.89, "nav": 0.9879, "chg_pct": -0.7}, {"date": "2026-06-26", "yge": 7.51, "etf": 1.743, "mv": 5028.9, "index": 992.08, "nav": 0.9921, "chg_pct": 0.43}, {"date": "2026-06-29", "yge": 7.6, "etf": 1.781, "mv": 5094.3, "index": 1004.99, "nav": 1.005, "chg_pct": 1.3}, {"date": "2026-06-30", "yge": 7.53, "etf": 1.779, "mv": 5051.7, "index": 996.59, "nav": 0.9966, "chg_pct": -0.84}, {"date": "2026-07-01", "yge": 7.68, "etf": 1.834, "mv": 5158.2, "index": 1017.57, "nav": 1.0176, "chg_pct": 2.11}, {"date": "2026-07-02", "yge": 7.83, "etf": 1.797, "mv": 5237.1, "index": 1033.16, "nav": 1.0332, "chg_pct": 1.53}, {"date": "2026-07-03", "yge": 7.83, "etf": 1.836, "mv": 5248.8, "index": 1035.56, "nav": 1.0356, "chg_pct": 0.22}, {"date": "2026-07-06", "yge": 7.8, "etf": 1.858, "mv": 5237.4, "index": 1033.21, "nav": 1.0332, "chg_pct": -0.22}, {"date": "2026-07-07", "yge": 7.68, "etf": 1.815, "mv": 5152.5, "index": 1016.43, "nav": 1.0164, "chg_pct": -1.62}]};
+var ENC = "FkMNFRIMMgwZVltJWFFZTU9ZXE1PVhMMDg4dEBJLV0E0D0MNDBUKVltJT1NfRldEXVdCRlNLQUFNDQYMT1tPQ09cQUFNERUPT1tPRU9RVFdYWEFLABdNTkFcXVdWWlFYQUFNHQ8NCBlNTkFYXVFfWlFFTUMBFRdLV0FeWlFFTUMMHAY2HQIbVltJAxQDGBxFTRpNEAAdCENVVENbXVNZWVFfQFNcVk1JTxgIEUNTTVZBQVlFTUMKAAdLV0FeWllaVE1PVgwfT1tPQVFQVE9YWEFLBA8LERlLV0FeRFFfQ1FaWEFLAwAZVltJXE9fRFdYQUFNFwkOMhEMAENTTVFBQlAUQUEUVgUIGQRNTkFLX1FdQkxZW0xdQENFTUMWEwRLV0FYWlRFTUMKAAdLV0FeWllYQUFNGRdLV0FaRFVaQ1FDVEMAAwUKDENTTVhWQE9RWk1PVg8IG0NVVFFHVFhbTU1JTwIHEz4ZDhVNTkFEXE9eRRxFTRpNEAAdCENVVENbXVNZWVFfQFNaVk1JTxgIEUNTTVZBQFVFTUMKAAdLV0FeWllYX01PVgwfT1tPQVFZWk9ZWEFLBA8LERlLV0FWTFZHVVhDVEMHDBdNTkFZQ1hXQ1hFTUMMHAY2HQIbVltJQFFBQxxFTRpNEAAdCENVVENbXVNZWVFfQFNZVk1JTxgIEUNTTVZBQVBFTUMKAAdLV0FeWlZdXk1PVgwfT1tPQVFbVU9WWEFLBA8LERlLV0FWTVNHXVlDVEMHDBdNTkFZQ1hWRlBFTUMMHAY2HQIbVltJXU9bRxxFTRpNEAAdCENVVENbXVNZWVFfQFNWVk1JTxgIEUNTTVZBQk1JTwQbEkNTTVBBQ1lYQUFNGRdLV0FaRFhdQ1JDVEMAAwUKDENTTVBfRFVHVFhDVEMHDBdNTkFYQ1FfQU1JTwIHEz4ZDhVNTkFYQ1ISWEESTwUOAARLV0FNRlFbW0xfQkxaXUNDVEMQCgRNTkFeQ1RcWEFLCBUJVltJXE9YQ1hFTUMCAkNTTVRfQVBHWk1PVggHCQQXVltJVFhZWlRQQUFNGgAfT1tPRE9QVFdZWEFLDgkIKxEKGUNVVExZQ1lbCU1JFkMLFRUMT1tPVlNZX1dCRFZEXVBNWEFLFAYKVltJWk9ZTE1JTwQbEkNTTVBBTFJdQUFNGRdLV0FaRVRRQ1NDVEMAAwUKDENTTVBfRVZHWFZDVEMHDBdNTkFYQ1FeQ1dFTUMMHAY2HQIbVltJX09eRRxFTRpNEAAdCENVVENbXVNZWVFeQFFdVk1JTxgIEUNTTVZBTFJFTUMKAAdLV0FeWlZQWk1PVgwfT1tPQVNaWk9eWEFLBA8LERlLV0FeRFJaQ1BZWEFLAwAZVltJXE9fR1JbQUFNFwkOMhEMAENTTVBBQVIUQUEUVgUIGQRNTkFLX1FdQkxZWkxfR0NFTUMWEwRLV0FYWllaQUFNERUPT1tPRU9RXldDVEMEG0NVVFRbWVlBTE1JTwgBEAQRT1tPRVFaWE9aQk1JTw8OAkNTTVBBRFJcW01PVgIBCj4fFxVLV0FfWlNbEE1PD0MNDBUKVltJT1NfRldEXVZCRFdLQUFNDQYMT1tPQ09RQUFNERUPT1tPRU9RWFlDVEMEG0NVVFRbXlZBQE1JTwgBEAQRT1tPRVFaXk9dRU1JTw8OAkNTTVBBRFJaX01PVgIBCj4fFxVLV0FCRE9bXxxDVBpLCQAbEUNTTUNdRFNfQFFYWVFeT01PVhgOCENVVFZHW1lDVEMMGQdNTkFYQ1leQU1JTwwZVltJWFBaRk9cQUFNHQ8NCBlNTkFYXVBZWlVaQUFNGgAfT1tPRU9ZXFdbWEFLDgkIKxEKGUNVVExYQ1ddCTwU";
+
+function xdec(enc, key) {
+  var raw = atob(enc);
+  var r = '';
+  for (var i = 0; i < raw.length; i++) {
+    r += String.fromCharCode(raw.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return r;
+}
+
+function doUnlock() {
+  var pwd = document.getElementById('pwd-input').value;
+  try {
+    var dec = xdec(ENC, pwd);
+    var DATA = JSON.parse(dec);
+    document.getElementById('login-overlay').style.opacity = '0';
+    setTimeout(function() { document.getElementById('login-overlay').style.display = 'none'; }, 500);
+    document.getElementById('app').style.display = 'block';
+    render(DATA);
+  } catch(e) {
+    document.getElementById('pwd-error').style.display = 'block';
+    document.getElementById('pwd-input').select();
+  }
+}
 
 function fmt(n, d) { return Number(n).toFixed(d); }
 function chgClass(v) { return v === null || v === undefined ? 'flat' : (v >= 0 ? 'up' : 'down'); }
 function chgSign(v) { return v === null || v === undefined ? '' : (v >= 0 ? '+' : ''); }
-function arrow(v)    { return v === null || v === undefined ? '' : (v >= 0 ? '▲' : '▼'); }
+function arrow(v) { return v === null || v === undefined ? '' : (v >= 0 ? '\u25B2' : '\u25BC'); }
 
-// ===== 指标卡片 =====
-document.getElementById('cards').innerHTML = [
-  { label: '最新指数点位', value: fmt(last.index, 2), sub: '基准 1000pt' },
-  { label: '最新净值',     value: fmt(last.nav, 4),  sub: '基准 1.0000', cls: chgClass(last.chg_pct) },
-  { label: '总市值',       value: fmt(last.mv, 1),   sub: '万元' },
-  { label: '当日涨跌',     value: chgSign(last.chg_pct) + fmt(last.chg_pct, 2) + '%',
-    sub: arrow(last.chg_pct) + ' 较前一交易日', cls: chgClass(last.chg_pct) }
-].map(c => `
-  <div class="card">
-    <div class="label">${c.label}</div>
-    <div class="value ${c.cls || ''}">${c.value}</div>
-    <div class="sub">${c.sub}</div>
-  </div>`).join('');
+function render(DATA) {
+  var last = DATA.records[DATA.records.length - 1];
 
-// ===== 折线图 =====
-const labels   = DATA.records.map(r => r.date);
-const idxData  = DATA.records.map(r => r.index);
-const navData  = DATA.records.map(r => r.nav);
+  document.getElementById('cards').innerHTML = [
+    { label: 'Index', value: fmt(last.index, 2), sub: 'Base 1000pt' },
+    { label: 'NAV', value: fmt(last.nav, 4), sub: 'Base 1.0000', cls: chgClass(last.chg_pct) },
+    { label: 'Total MV', value: fmt(last.mv, 1), sub: 'CNY 10k' },
+    { label: 'Daily Chg', value: chgSign(last.chg_pct) + fmt(last.chg_pct, 2) + '%', sub: arrow(last.chg_pct) + ' vs prev', cls: chgClass(last.chg_pct) }
+  ].map(function(c) {
+    return '<div class="card"><div class="label">' + c.label + '</div><div class="value ' + (c.cls||'') + '">' + c.value + '</div><div class="sub">' + c.sub + '</div></div>';
+  }).join('');
 
-new Chart(document.getElementById('chart'), {
-  type: 'line',
-  data: {
-    labels,
-    datasets: [
-      {
-        label: '指数点位',
-        data: idxData,
-        borderColor: '#4a6cf7',
-        backgroundColor: 'rgba(74,108,247,0.10)',
-        fill: true,
-        tension: 0.3,
-        pointRadius: 3,
-        pointBackgroundColor: '#4a6cf7',
-        yAxisID: 'y'
-      },
-      {
-        label: '净值',
-        data: navData,
-        borderColor: '#e8913a',
-        backgroundColor: 'rgba(232,145,58,0.08)',
-        fill: false,
-        tension: 0.3,
-        pointRadius: 3,
-        pointBackgroundColor: '#e8913a',
-        yAxisID: 'y1'
+  var labels = DATA.records.map(function(r) { return r.date; });
+  var idxData = DATA.records.map(function(r) { return r.index; });
+  var navData = DATA.records.map(function(r) { return r.nav; });
+
+  new Chart(document.getElementById('chart'), {
+    type: 'line',
+    data: { labels: labels, datasets: [
+      { label: 'Index', data: idxData, borderColor: '#4a6cf7', backgroundColor: 'rgba(74,108,247,0.10)', fill: true, tension: 0.3, pointRadius: 3, pointBackgroundColor: '#4a6cf7', yAxisID: 'y' },
+      { label: 'NAV', data: navData, borderColor: '#e8913a', backgroundColor: 'rgba(232,145,58,0.08)', fill: false, tension: 0.3, pointRadius: 3, pointBackgroundColor: '#e8913a', yAxisID: 'y1' }
+    ] },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'top', labels: { font: { size: 13 } } } },
+      scales: {
+        y: { type: 'linear', position: 'left', title: { display: true, text: 'Index' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+        y1: { type: 'linear', position: 'right', title: { display: true, text: 'NAV' }, grid: { drawOnChartArea: false }, min: 0.98 },
+        x: { ticks: { font: { size: 11 } } }
       }
-    ]
-  },
-  options: {
-    responsive: true,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: { position: 'top', labels: { font: { size: 13 } } },
-      tooltip: { backgroundColor: 'rgba(0,0,0,0.72)', padding: 12, titleFont: { size: 13 }, bodyFont: { size: 12 } }
-    },
-    scales: {
-      y: {
-        type: 'linear', position: 'left',
-        title: { display: true, text: '指数点位', font: { size: 13 } },
-        grid: { color: 'rgba(0,0,0,0.05)' }
-      },
-      y1: {
-        type: 'linear', position: 'right',
-        title: { display: true, text: '净值', font: { size: 13 } },
-        grid: { drawOnChartArea: false },
-        min: 0.98
-      },
-      x: { ticks: { font: { size: 11 } } }
     }
-  }
-});
+  });
 
-// ===== 历史记录表格（倒序）=====
-const baseDate = '2026-06-22';
-let html = '';
-for (let i = DATA.records.length - 1; i >= 0; i--) {
-  const r = DATA.records[i];
-  const isBase = r.date === baseDate;
-  const cls = isBase ? 'base-row' : '';
-  const chgStr = r.chg_pct === null
-    ? '-'
-    : `<span class="${chgClass(r.chg_pct)}">${chgSign(r.chg_pct)}${fmt(r.chg_pct,2)}% ${arrow(r.chg_pct)}</span>`;
-  html += `<tr class="${cls}">
-    <td>${r.date}${isBase ? ' ★基准' : ''}</td>
-    <td>${fmt(r.yge,2)}</td>
-    <td>${fmt(r.etf,4)}</td>
-    <td>${fmt(r.mv,1)}</td>
-    <td>${fmt(r.index,2)}</td>
-    <td>${fmt(r.nav,4)}</td>
-    <td>${chgStr}</td>
-  </tr>`;
+  var baseDate = '2026-06-22';
+  var html = '';
+  for (var i = DATA.records.length - 1; i >= 0; i--) {
+    var r = DATA.records[i];
+    var isBase = r.date === baseDate;
+    var cls = isBase ? 'base-row' : '';
+    var chgStr = r.chg_pct === null ? '-' : '<span class="' + chgClass(r.chg_pct) + '">' + chgSign(r.chg_pct) + fmt(r.chg_pct,2) + '% ' + arrow(r.chg_pct) + '</span>';
+    html += '<tr class="' + cls + '"><td>' + r.date + (isBase ? ' \u2605' : '') + '</td><td>' + fmt(r.yge,2) + '</td><td>' + fmt(r.etf,4) + '</td><td>' + fmt(r.mv,1) + '</td><td>' + fmt(r.index,2) + '</td><td>' + fmt(r.nav,4) + '</td><td>' + chgStr + '</td></tr>';
+  }
+  document.getElementById('tbody').innerHTML = html;
 }
-document.getElementById('tbody').innerHTML = html;
 </script>
 </body>
 </html>
