@@ -4,26 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>Portfolio Tracker</title>
+<title>Portfolio Viewer</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="enc_data.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f0f2f5; color: #333; }
 
-  /* Login Overlay */
-  #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.5s; }
-  .login-box { text-align: center; }
-  .login-box h2 { color: #fff; font-size: 1.4rem; margin-bottom: 24px; letter-spacing: 2px; }
-  .login-input-row { display: flex; gap: 8px; justify-content: center; }
-  #pwd-input { padding: 12px 16px; font-size: 16px; border: 1px solid #3a3a5c; border-radius: 8px; background: rgba(255,255,255,0.08); color: #fff; width: 220px; outline: none; transition: border-color 0.2s; }
-  #pwd-input:focus { border-color: #4a6cf7; }
-  #pwd-input::placeholder { color: #6a6a8a; }
-  .login-btn { padding: 12px 24px; font-size: 16px; border: none; border-radius: 8px; background: #4a6cf7; color: #fff; cursor: pointer; transition: background 0.2s; }
-  .login-btn:hover { background: #3a5ce5; }
-  #pwd-error { color: #e04040; margin-top: 14px; font-size: 0.85rem; display: none; }
-  #pwd-loading { color: #8a8aaa; margin-top: 14px; font-size: 0.85rem; display: none; }
+  #gate { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.5s; }
+  .gate-box { text-align: center; }
+  .gate-box h2 { color: #fff; font-size: 1.4rem; margin-bottom: 24px; letter-spacing: 2px; }
+  .gate-row { display: flex; gap: 8px; justify-content: center; }
+  #code { padding: 12px 16px; font-size: 16px; border: 1px solid #3a3a5c; border-radius: 8px; background: rgba(255,255,255,0.08); color: #fff; width: 220px; outline: none; transition: border-color 0.2s; }
+  #code:focus { border-color: #4a6cf7; }
+  #code::placeholder { color: #6a6a8a; }
+  .go-btn { padding: 12px 24px; font-size: 16px; border: none; border-radius: 8px; background: #4a6cf7; color: #fff; cursor: pointer; transition: background 0.2s; }
+  .go-btn:hover { background: #3a5ce5; }
+  #gate-err { color: #e04040; margin-top: 14px; font-size: 0.85rem; display: none; }
+  #gate-wait { color: #8a8aaa; margin-top: 14px; font-size: 0.85rem; display: none; }
 
-  /* Content */
   #app { display: none; }
   .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
   h1 { text-align: center; font-size: 1.6rem; color: #1a1a1a; margin-bottom: 24px; }
@@ -54,21 +53,21 @@
 </head>
 <body>
 
-<div id="login-overlay">
-  <div class="login-box">
-    <h2>&#128274; Access Verification</h2>
-    <div class="login-input-row">
-      <input type="password" id="pwd-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')doUnlock()">
-      <button class="login-btn" onclick="doUnlock()">Unlock</button>
+<div id="gate">
+  <div class="gate-box">
+    <h2>&#128202; Portfolio Viewer</h2>
+    <div class="gate-row">
+      <input type="text" id="code" placeholder="Enter access code" onkeydown="if(event.key==='Enter')_go()">
+      <button class="go-btn" onclick="_go()">View</button>
     </div>
-    <p id="pwd-error">Password incorrect</p>
-    <p id="pwd-loading">Decrypting...</p>
+    <p id="gate-err">Invalid code</p>
+    <p id="gate-wait">Loading...</p>
   </div>
 </div>
 
 <div id="app">
   <div class="container">
-    <h1>&#128202; Portfolio Tracker</h1>
+    <h1>&#128202; Portfolio Viewer</h1>
     <div class="cards" id="cards"></div>
     <div class="chart-wrap">
       <h2>&#128200; Index & NAV Trend</h2>
@@ -95,57 +94,42 @@
 </div>
 
 <script>
-// AES-256-GCM encrypted data (PBKDF2 key derivation, random salt+IV)
-var ENC_SALT = "HvMvxW9iuK6ZSFdzs5tDvA==";
-var ENC_IV = "GA34SBHcQnIKlHM7";
-var ENC_CT = "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";
-var ENC_ITER = 100000;
-
-function b64ToBuf(b64) {
-  var bin = atob(b64);
-  var buf = new Uint8Array(bin.length);
-  for (var i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-  return buf.buffer;
+function _b2b(s) {
+  var b = atob(s);
+  var a = new Uint8Array(b.length);
+  for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i);
+  return a.buffer;
 }
 
-async function deriveAESKey(password, saltBuf, iterations) {
-  var enc = new TextEncoder();
-  var keyMaterial = await crypto.subtle.importKey(
-    'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
-  );
+async function _pk(p, s, n) {
+  var e = new TextEncoder();
+  var m = await crypto.subtle.importKey('raw', e.encode(p), {name:'PBKDF2'}, false, ['deriveKey']);
   return crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt: saltBuf, iterations: iterations, hash: 'SHA-256' },
-    keyMaterial,
-    { name: 'AES-GCM', length: 256 },
+    {name:'PBKDF2', salt:s, iterations:n, hash:'SHA-256'},
+    m,
+    {name:'AES-GCM', length:256},
     false,
     ['decrypt']
   );
 }
 
-async function doUnlock() {
-  var pwd = document.getElementById('pwd-input').value;
-  document.getElementById('pwd-error').style.display = 'none';
-  document.getElementById('pwd-loading').style.display = 'block';
+async function _go() {
+  var v = document.getElementById('code').value;
+  document.getElementById('gate-err').style.display = 'none';
+  document.getElementById('gate-wait').style.display = 'block';
   try {
-    var saltBuf = b64ToBuf(ENC_SALT);
-    var ivBuf = b64ToBuf(ENC_IV);
-    var ctBuf = b64ToBuf(ENC_CT);
-    var aesKey = await deriveAESKey(pwd, saltBuf, ENC_ITER);
-    var plainBuf = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: ivBuf }, aesKey, ctBuf
-    );
-    var jsonStr = new TextDecoder().decode(plainBuf);
-    var DATA = JSON.parse(jsonStr);
-
-    document.getElementById('pwd-loading').style.display = 'none';
-    document.getElementById('login-overlay').style.opacity = '0';
-    setTimeout(function() { document.getElementById('login-overlay').style.display = 'none'; }, 500);
+    var k = await _pk(v, _b2b(_a), _d);
+    var r = await crypto.subtle.decrypt({name:'AES-GCM', iv:_b2b(_b)}, k, _b2b(_c));
+    var D = JSON.parse(new TextDecoder().decode(r));
+    document.getElementById('gate-wait').style.display = 'none';
+    document.getElementById('gate').style.opacity = '0';
+    setTimeout(function() { document.getElementById('gate').style.display = 'none'; }, 500);
     document.getElementById('app').style.display = 'block';
-    render(DATA);
+    _render(D);
   } catch(e) {
-    document.getElementById('pwd-loading').style.display = 'none';
-    document.getElementById('pwd-error').style.display = 'block';
-    document.getElementById('pwd-input').select();
+    document.getElementById('gate-wait').style.display = 'none';
+    document.getElementById('gate-err').style.display = 'block';
+    document.getElementById('code').select();
   }
 }
 
@@ -154,9 +138,8 @@ function chgClass(v) { return v === null || v === undefined ? 'flat' : (v >= 0 ?
 function chgSign(v) { return v === null || v === undefined ? '' : (v >= 0 ? '+' : ''); }
 function arrow(v) { return v === null || v === undefined ? '' : (v >= 0 ? '\u25B2' : '\u25BC'); }
 
-function render(DATA) {
+function _render(DATA) {
   var last = DATA.records[DATA.records.length - 1];
-
   document.getElementById('cards').innerHTML = [
     { label: 'Index', value: fmt(last.index, 2), sub: 'Base 1000pt' },
     { label: 'NAV', value: fmt(last.nav, 4), sub: 'Base 1.0000', cls: chgClass(last.chg_pct) },
