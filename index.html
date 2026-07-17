@@ -43,6 +43,8 @@
   td { padding: 10px; font-size: 0.85rem; text-align: center; border-bottom: 1px solid #f0f0f0; }
   tr:hover td { background: #f8f9ff; }
   tr.base-row td { background: #fff8e1; font-weight: 600; }
+  tr.new-high-row td { background: #fff3cd; font-weight: 600; }
+  .new-high-badge { display: inline-block; background: #ffd700; color: #7a6200; font-size: 0.7rem; padding: 1px 6px; border-radius: 8px; margin-left: 4px; font-weight: 700; }
   .footer { text-align: center; font-size: 0.75rem; color: #aaa; margin-top: 20px; }
   @media (max-width: 700px) {
     .cards { grid-template-columns: repeat(2, 1fr); }
@@ -545,11 +547,32 @@ function _render(DATA) {
   var idxData = DATA.records.map(function(r) { return r.index; });
   var navData = DATA.records.map(function(r) { return r.nav; });
 
+  // Compute running max NAV to detect new highs (since base date)
+  var maxNav = DATA.records[0].nav || 0;
+  var isNewHigh = [false];
+  var navPointStyle = ['circle'];
+  var navPointRadius = [0];
+  var navPointColor = ['#e8913a'];
+  for (var i = 1; i < DATA.records.length; i++) {
+    if (DATA.records[i].nav > maxNav) {
+      maxNav = DATA.records[i].nav;
+      isNewHigh.push(true);
+      navPointStyle.push('star');
+      navPointRadius.push(10);
+      navPointColor.push('#ffd700');
+    } else {
+      isNewHigh.push(false);
+      navPointStyle.push('circle');
+      navPointRadius.push(3);
+      navPointColor.push('#e8913a');
+    }
+  }
+
   new Chart(document.getElementById('chart'), {
     type: 'line',
     data: { labels: labels, datasets: [
       { label: 'Index', data: idxData, borderColor: '#4a6cf7', backgroundColor: 'rgba(74,108,247,0.10)', fill: true, tension: 0.3, pointRadius: 3, pointBackgroundColor: '#4a6cf7', yAxisID: 'y' },
-      { label: 'NAV', data: navData, borderColor: '#e8913a', backgroundColor: 'rgba(232,145,58,0.08)', fill: false, tension: 0.3, pointRadius: 3, pointBackgroundColor: '#e8913a', yAxisID: 'y1' }
+      { label: 'NAV', data: navData, borderColor: '#e8913a', backgroundColor: 'rgba(232,145,58,0.08)', fill: false, tension: 0.3, pointStyle: navPointStyle, pointRadius: navPointRadius, pointBackgroundColor: navPointColor, yAxisID: 'y1' }
     ] },
     options: {
       responsive: true,
@@ -568,9 +591,11 @@ function _render(DATA) {
   for (var i = DATA.records.length - 1; i >= 0; i--) {
     var r = DATA.records[i];
     var isBase = r.date === baseDate;
-    var cls = isBase ? 'base-row' : '';
+    var nh = isNewHigh[i];
+    var cls = (isBase ? 'base-row' : '') + (nh ? ' new-high-row' : '');
     var chgStr = r.chg_pct === null ? '-' : '<span class="' + chgClass(r.chg_pct) + '">' + chgSign(r.chg_pct) + fmt(r.chg_pct,2) + '% ' + arrow(r.chg_pct) + '</span>';
-    html += '<tr class="' + cls + '"><td>' + r.date + (isBase ? ' \u2605' : '') + '</td><td>' + fmt(r.yge,2) + '</td><td>' + fmt(r.etf,4) + '</td><td>' + fmt(r.mv,1) + '</td><td>' + fmt(r.index,2) + '</td><td>' + fmt(r.nav,4) + '</td><td>' + chgStr + '</td></tr>';
+    var nhBadge = nh ? '<span class="new-high-badge">\u2605 NEW HIGH</span>' : '';
+    html += '<tr class="' + cls + '"><td>' + r.date + (isBase ? ' \u2605' : '') + '</td><td>' + fmt(r.yge,2) + '</td><td>' + fmt(r.etf,4) + '</td><td>' + fmt(r.mv,1) + '</td><td>' + fmt(r.index,2) + '</td><td>' + fmt(r.nav,4) + nhBadge + '</td><td>' + chgStr + '</td></tr>';
   }
   document.getElementById('tbody').innerHTML = html;
 }
