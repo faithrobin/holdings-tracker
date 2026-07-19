@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>Portfolio Viewer</title>
+<title>M&amp;M Portfolio Viewer</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="enc_data.js"></script>
 <style>
@@ -25,7 +25,8 @@
 
   #app { display: none; }
   .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
-  h1 { text-align: center; font-size: 1.6rem; color: #1a1a1a; margin-bottom: 24px; }
+  h1 { text-align: center; font-size: 1.6rem; color: #1a1a1a; margin-bottom: 24px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .brand-badge { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; padding: 3px 12px; border-radius: 8px; font-size: 0.9rem; font-weight: 800; letter-spacing: 1px; display: inline-block; }
   .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
   .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-align: center; transition: transform 0.15s; }
   .card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
@@ -57,7 +58,7 @@
 
 <div id="gate">
   <div class="gate-box">
-    <h2>&#128202; Portfolio Viewer</h2>
+    <h2 style="display:flex;align-items:center;justify-content:center;gap:10px"><span class="brand-badge">M&amp;M</span> Portfolio Viewer</h2>
     <div class="gate-row">
       <input type="password" id="code" placeholder="Enter access code" onkeydown="if(event.key==='Enter')_go()">
       <button class="go-btn" onclick="_go()">View</button>
@@ -69,7 +70,7 @@
 
 <div id="app">
   <div class="container">
-    <h1>&#128202; Portfolio Viewer</h1>
+    <h1><span class="brand-badge">M&amp;M</span> Portfolio Viewer</h1>
     <div class="cards" id="cards"></div>
     <div class="chart-wrap">
       <h2>&#128200; Index & NAV Trend</h2>
@@ -91,7 +92,7 @@
         <tbody id="tbody"></tbody>
       </table>
     </div>
-    <div class="footer">Base: 2026-06-22 | Base MV: 5,069.01 CNY 10k | Base Index: 1000.00 | NAV: 1.0000 | Updated: 2026-07-17</div>
+    <div class="footer">Base: 2026-06-22 | Base MV: 5,069.01 CNY 10k | Base Index: 1000.00 | NAV: 1.0000 | Updated: 2026-07-19</div>
   </div>
 </div>
 
