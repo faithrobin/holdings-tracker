@@ -6,7 +6,19 @@
 <meta name="robots" content="noindex, nofollow">
 <title>M&amp;M Portfolio Viewer</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="enc_data.js"></script>
+<script>
+// Try remote (GitHub raw, accessible in CN) first, then fallback to local
+(function(){
+  var e=document.createElement('script');
+  e.src='https://raw.githubusercontent.com/faithrobin/holdings-tracker/main/enc_data.js';
+  e.onerror=function(){
+    var f=document.createElement('script');
+    f.src='enc_data.js';
+    document.head.appendChild(f);
+  };
+  document.head.appendChild(e);
+})();
+</script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f0f2f5; color: #333; }
@@ -535,6 +547,9 @@ function arrow(v) { return v === null || v === undefined ? '' : (v >= 0 ? '\u25B
 
 function _render(DATA) {
   var last = DATA.records[DATA.records.length - 1];
+  // Update footer date dynamically from data
+  var _ft = document.querySelector('.footer');
+  if (_ft) _ft.textContent = _ft.textContent.replace(/Updated:.*$/, 'Updated: ' + last.date);
   document.getElementById('cards').innerHTML = [
     { label: 'Index', value: fmt(last.index, 2), sub: 'Base 1000pt' },
     { label: 'NAV', value: fmt(last.nav, 4), sub: 'Base 1.0000', cls: chgClass(last.chg_pct) },
