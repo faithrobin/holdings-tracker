@@ -5,18 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>M&amp;M Portfolio Viewer</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="chart.umd.min.js"></script>
 <script>
-// Try remote (GitHub raw, accessible in CN) first, then fallback to local
+// Load LOCAL data payload first (self-contained; works behind GFW / offline).
+// Only if the local file is missing, async-try GitHub raw as a last-resort fallback.
 (function(){
-  var e=document.createElement('script');
-  e.src='https://raw.githubusercontent.com/faithrobin/holdings-tracker/main/enc_data.js';
-  e.onerror=function(){
-    var f=document.createElement('script');
-    f.src='enc_data.js';
-    document.head.appendChild(f);
+  var s=document.createElement('script');
+  s.src='enc_data.js';
+  s.onerror=function(){
+    var r=document.createElement('script');
+    r.src='https://raw.githubusercontent.com/faithrobin/holdings-tracker/main/enc_data.js';
+    document.head.appendChild(r);
   };
-  document.head.appendChild(e);
+  document.head.appendChild(s);
 })();
 </script>
 <style>
