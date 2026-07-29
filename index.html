@@ -7,17 +7,24 @@
 <title>M&amp;M Portfolio Viewer</title>
 <script src="chart.umd.min.js"></script>
 <script>
-// Load LOCAL data payload first (self-contained; works behind GFW / offline).
-// Only if the local file is missing, async-try GitHub raw as a last-resort fallback.
+// Load LATEST data payload from GitHub raw FIRST, so any deployed copy
+// (e.g. CloudStudio) always reverse-syncs and shows the freshest data.
+// Fall back to the bundled local enc_data.js only if the raw fetch fails.
 (function(){
-  var s=document.createElement('script');
-  s.src='enc_data.js';
-  s.onerror=function(){
-    var r=document.createElement('script');
-    r.src='https://raw.githubusercontent.com/faithrobin/holdings-tracker/main/enc_data.js';
-    document.head.appendChild(r);
-  };
-  document.head.appendChild(s);
+  var __done=false;
+  function __local(){
+    if(__done) return;
+    __done=true;
+    var s=document.createElement('script');
+    s.src='enc_data.js';
+    document.head.appendChild(s);
+  }
+  var r=document.createElement('script');
+  r.src='https://raw.githubusercontent.com/faithrobin/holdings-tracker/main/enc_data.js';
+  r.onload=function(){ __done=true; };
+  r.onerror=function(){ __local(); };
+  setTimeout(function(){ if(!__done) __local(); }, 4000);
+  document.head.appendChild(r);
 })();
 </script>
 <style>
